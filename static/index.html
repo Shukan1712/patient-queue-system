@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patient Queue System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#"><i class="bi bi-hospital"></i> Patient Queue</a>
+    <div id="auth-buttons">
+      <button class="btn btn-outline-light me-2" id="login-btn" onclick="showLoginModal()">👤 Admin Login</button>
+      <button class="btn btn-warning d-none" id="logout-btn" onclick="logout()">🔒 Logout</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container my-4">
+
+  <!-- Admin Greeting -->
+  <div id="admin-greeting" class="alert alert-success d-none" role="alert">
+    👨‍⚕️ Hello Dr. Shukan Shah! This is an admin account. You can now treat and archive patients.
+  </div>
+
+  <!-- Add Patient -->
+  <div class="card mb-4">
+    <div class="card-header">➕ Add New Patient</div>
+    <div class="card-body">
+      <form id="patient-form">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <input type="text" id="name" class="form-control" placeholder="Patient Name" required />
+          </div>
+          <div class="col-md-4">
+            <input type="number" id="emergency" class="form-control" placeholder="Emergency Level (1-5)" min="1" max="5" required />
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-primary w-100" type="submit">Add</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Treat + Search -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4>🧑‍⚕️ Waiting List</h4>
+    <div>
+      <input class="form-control d-inline-block me-2" style="width: 200px;" id="search" placeholder="Search name..." />
+      <button class="btn btn-danger" onclick="treatNext()">Treat Next</button>
+    </div>
+  </div>
+
+  <!-- Patient List -->
+  <ul class="list-group mb-4" id="patient-list"></ul>
+
+  <!-- Archive Section -->
+  <div id="archive-section" style="display: none;">
+    <h4 class="text-muted">📁 Archived Patients</h4>
+    <button class="btn btn-sm btn-outline-secondary mb-2" onclick="toggleArchive()">Toggle Archive</button>
+    <ul class="list-group" id="archive-list"></ul>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="login-form">
+        <div class="modal-header">
+          <h5 class="modal-title">Admin Login</h5>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label>Email</label>
+            <input type="email" class="form-control" id="login-email" required value="admin@queue.com" />
+          </div>
+          <div class="mb-2">
+            <label>Password</label>
+            <input type="password" class="form-control" id="login-password" required value="1234" />
+          </div>
+          <div class="text-muted small">Demo Login: <code>admin@queue.com</code> / <code>1234</code></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-success">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let idCounter = 1;
+let isAdmin = localStorage.getItem("isAdmin") === "true";
+
+function updateAuthUI() {
+  document.getElementById("login-btn").classList.toggle("d-none", isAdmin);
+  document.getElementById("logout-btn").classList.toggle("d-none", !isAdmin);
+  document.getElementById("archive-section").style.display = isAdmin ? "block" : "none";
+  document.getElementById("admin-greeting").classList.toggle("d-none", !isAdmin);
+}
+
+function logout() {
+  localStorage.removeItem("isAdmin");
+  isAdmin = false;
+  alert("Logged out.");
+  updateAuthUI();
+  loadPatients();
+}
+
+function showLoginModal() {
+  const modal = new bootstrap.Modal(document.getElementById('loginModal'));
+  modal.show();
+}
+
+document.getElementById("patient-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("name").value;
+  const emergency = parseInt(document.getElementById("emergency").value);
+
+  await fetch("/add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: idCounter++, name, emergency })
+  });
+
+  e.target.reset();
+  loadPatients();
+});
+
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  if (res.ok) {
+    localStorage.setItem("isAdmin", "true");
+    isAdmin = true;
+    alert("Login successful!");
+    bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+    updateAuthUI();
+    loadArchive();
+  } else {
+    alert("Invalid credentials");
+  }
+});
+
+async function loadPatients() {
+  const res = await fetch("/list");
+  const patients = await res.json();
+  const list = document.getElementById("patient-list");
+  list.innerHTML = '';
+  const search = document.getElementById("search").value.toLowerCase();
+
+  patients
+    .filter(p => p.name.toLowerCase().includes(search))
+    .sort((a, b) => b.emergency - a.emergency || a.id - b.id)
+    .forEach(p => {
+      const item = document.createElement("li");
+      item.className = "list-group-item d-flex justify-content-between align-items-center";
+      item.innerHTML = `<span>${p.name} <span class="badge bg-${badgeColor(p.emergency)} ms-2">Emergency: ${p.emergency}</span></span>`;
+      list.appendChild(item);
+    });
+}
+
+function badgeColor(level) {
+  if (level >= 5) return 'danger';
+  if (level >= 3) return 'warning';
+  return 'success';
+}
+
+async function treatNext() {
+  if (!isAdmin) return alert("Admin login required.");
+  const res = await fetch("/next", { method: "DELETE" });
+  const msg = await res.json();
+  alert(msg.message);
+  loadPatients();
+  loadArchive();
+}
+
+async function loadArchive() {
+  if (!isAdmin) return;
+  const res = await fetch("/archive");
+  const archive = await res.json();
+  const list = document.getElementById("archive-list");
+  list.innerHTML = '';
+  archive.forEach(p => {
+    const item = document.createElement("li");
+    item.className = "list-group-item";
+    item.textContent = `${p.name} (Emergency: ${p.emergency})`;
+    list.appendChild(item);
+  });
+}
+
+function toggleArchive() {
+  const section = document.getElementById("archive-list");
+  section.style.display = section.style.display === "none" ? "block" : "none";
+}
+
+document.getElementById("search").addEventListener("input", loadPatients);
+window.onload = () => {
+  updateAuthUI();
+  loadPatients();
+  if (isAdmin) loadArchive();
+};
+</script>
+</body>
+</html>
