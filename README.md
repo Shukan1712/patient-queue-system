@@ -33,7 +33,10 @@ live link to see the project
 | Deployment | AWS EC2 + systemd        |
 
 ---
+## 📸 Live Demo Screenshot
 
+![Patient Queue System](https://github.com/Shukan1712/patient-queue-system/blob/main/Screenshot%202025-04-06%20at%206.02.22%E2%80%AFPM.png?raw=true)
+---
 ## 👨‍💻 Author
 
 **Shukan Miteshkumar Shah**  
