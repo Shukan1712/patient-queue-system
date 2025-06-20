@@ -33,6 +33,25 @@ live link to see the project
 | Deployment | AWS EC2 + systemd        |
 
 ---
+
+
+
+### 🔧 Tech Stack Summary
+
+| Layer         | Technology                          | Purpose                                                  |
+|---------------|--------------------------------------|----------------------------------------------------------|
+| Frontend      | **HTML**, **Bootstrap 5**            | Responsive user interface                                |
+| Backend       | **FastAPI**, **Uvicorn**             | RESTful API in Python                                    |
+| Database      | **Firebase Firestore**               | Real-time NoSQL database                                 |
+| Authentication| **Local demo auth**                  | Basic login via hardcoded admin credentials              |
+| Deployment    | **AWS EC2 (Ubuntu)**                 | Cloud hosting on virtual machine                         |
+| Process Mgmt  | **systemd**                          | Keeps the FastAPI app running 24/7                       |
+| Environment   | **Python virtual environment (venv)**| Dependency isolation and management                      |
+| Web Server    | **Port 8000** via Uvicorn            | FastAPI runs on this publicly accessible port            |
+
+
+
+---
 ## 📸 Live Demo Screenshot
 
 ![Patient Queue System](https://github.com/Shukan1712/patient-queue-system/blob/main/Screenshot%202025-04-06%20at%206.02.22%E2%80%AFPM.png?raw=true)
